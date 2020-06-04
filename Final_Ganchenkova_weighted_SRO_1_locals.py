@@ -39,8 +39,9 @@ import numpy
 G=''
 H=''
 J=''
-size ='32x32x10'
-filename = r'C:\Users\Harpal\.xy\startups\New_weighted_graph_creation_code\%s-quantum-well-graph-Ganchenkova.gpickle'%size
+#####size ='32x32x10'
+size = '32x32x5'
+filename = "32x32x5-quantum-well-graph-Ganchenkova.gpickle"
 lenJ=''
 # for graphing SRO
 SROx = []
@@ -65,6 +66,7 @@ def getNeighbours(i,k,P=None):
     
     global edgesDict
     key=(i,k)
+    print (f"This is the two input variables in a tuple: {key}")
     if key in edgesDict:
         return edgesDict[key]
     else:
@@ -74,7 +76,10 @@ def getNeighbours(i,k,P=None):
         edges = H.edges(i,k)   
         edges_of_weight = []
         neighbours = []
+        print(H.edges(i, 1))
+        print(edgesDict)
         for edge in edges:
+            print(edge)
             if edge[2]['weight'] == k:
                 edges_of_weight.append(edge)
         for anElement in edges_of_weight:
@@ -262,7 +267,7 @@ def runIsingModel_SRO_1(numberOfSwaps):
         if attemptAtomSwap():
             successfulSwaps += 1
         if(i%statsFrequency==0):
-            print float(i)/ns*100,'% Done'
+            print (float(i)/ns*100,'% Done')
             #etaIsing.print_status()
             SROx.append(i)
             SROy1.append(getSRO_1())
@@ -335,7 +340,7 @@ def main():
     # Assuming our initial graph is pure GaN, we need to create a random initial
     # composition.
     J=[] #J will be our list that holds our nodes where surface == False 
-    print 'size is',size.split('x')[-1]
+    print ('size is',size.split('x')[-1])
     if size.split('x')[-1]=='1':
         for node in G:
             if G.node[node]['surface']!=False:
