@@ -1,5 +1,0 @@
-ase==3.8.2
-decorator==4.4.2
-networkx==1.11
-numpy==1.16.6
-scipy==0.13.2

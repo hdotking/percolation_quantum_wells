@@ -141,7 +141,7 @@ def findNeighbours(outer_radius, inner_radius, weight):
         findEdges(outer_radius, inner_radius, weight, True)
 
 for i in range(len(radii)):
-    print "Finding neighbours for radius "+str(radii[i])+" and assigning weight "+str(weights[i])+"."
+    print ("Finding neighbours for radius " + str(radii[i]) + " and assigning weight " + str(weights[i]) + ".")
     if i==0:
         findNeighbours(radii[i], 0, weights[i]) # first no "inner_radius"
     else:
@@ -152,4 +152,4 @@ if export:
         nx.write_gpickle(G, str(na) + "x" + str(nb) + "x" + str(nc) + "-bulk-graph.gpickle")
     else:
         nx.write_gpickle(G, str(na) + "x" + str(nb) + "x" + str(nc) + "-quantum-well-graph.gpickle")
-    print "Graph constructed and exported successfully."
+    print ("Graph constructed and exported successfully.")
