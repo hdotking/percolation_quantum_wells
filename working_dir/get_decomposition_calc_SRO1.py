@@ -24,6 +24,7 @@ import math
 import random
 import os
 import numpy
+import sys
 
 #import cProfile
 #import pstats
@@ -36,23 +37,36 @@ import numpy
 # GLOBAL VARIABLES #
 ####################
 
+try:
+    arg = sys.argv[1]
+except IndexError:
+    arg_zero = sys.argv[0]
+    raise SystemExit("Usage: " + str(arg_zero) + " <input_filename.gpickle>")
+
+if len(sys.argv) > 2:
+    raise SystemExit("Please enter the .gpickle file of the crystal structure to decompose")
+
+
 G=''
 H=''
 J=''
-size ='32x32x1'
-filename = r'C:\Users\Harpal\.xy\startups\New_weighted_graph_creation_code\%s-quantum-well-graph-Ganchenkova.gpickle'%size
+size ='32x32x5'
+#filename = r'input/%s-quantum-well-graph-Ganchenkova.gpickle'%size
+#filename = r'make_crystal/v2_crystal/%s-graph-Ganchenkova.gpickle'%size
+#filename = r'%s-graph-Ganchenkova.gpickle'%size
+filename = sys.argv[1]
 lenJ=''
 # for graphing SRO
 SROx = []
-SROy4 =[]
+SROy1 = []
 # Scientific constants
 kB = 8.6173324*(10e-5) # eV
 # Simulation parameters
-T =773 # K
+T = 773 # K
 kT = kB*T
 indiumComposition = 0.5
 steps = 5000000
-statsFrequency = 5000 # generate statistics every statsFrequency steps
+statsFrequency = 10000  # generate statistics every statsFrequency steps
 saveFrequency = int(steps)/10
 ##############################################################################
 edgesDict={}
@@ -60,9 +74,9 @@ edgesDict={}
 def getNeighbours(i,k,P=None):
     """
     input your node and the weight of the neighbours you wanna find, i and
-    k. Retrieve a list of the nodes of the kth neigbour.    
+    k. Retrieve a list of the nodes of the kth neigbour.
     """
-    
+
     global edgesDict
     key=(i,k)
     if key in edgesDict:
@@ -136,12 +150,14 @@ def attemptAtomSwap():
     #            randomGaNode=r
     #        else:
     #            randomInNode=r
+
     while not randomInNode or not randomGaNode:
         r=J[random.randint(0,lenJ-1)]
         if H.node[r]['species']=='Ga':
             randomGaNode=r
         else:
-            randomInNode=r       
+            randomInNode=r
+       
 #+1 includes counts the Indium atom that we are looking for neighbours for in the count
 #Otherwise this could count ZERO In-In pairs when get_N_A_XXX() returns zero In neighbours
 #Must +1for ALL as well because there should be an In atom in the position of the Ga post swap
@@ -245,14 +261,14 @@ def get_N_A_2cc(i):
             numberOfIndiumNeighbours += 1 
     return numberOfIndiumNeighbours
 
-def runIsingModel_SRO_4(numberOfSwaps):
+def runIsingModel_SRO_1(numberOfSwaps):
     """ 
     Runs attemptAtomSwap() numberOfSwaps times.
     """
     ns=float(numberOfSwaps)
     
     #etaIsing = ETA(numberOfSwaps/statsFrequency) # set up a progress bar if 'eta' package is available
-    print ("Running Ising Model to calculate SRO_4... Please wait.")    
+    print ("Running Ising Model to calculate SRO_1... Please wait.")    
     successfulSwaps = 0
     SwapsSoFar = 0
     for i in range(numberOfSwaps):
@@ -263,9 +279,9 @@ def runIsingModel_SRO_4(numberOfSwaps):
             print float(i)/ns*100,'% Done'
             #etaIsing.print_status()
             SROx.append(i)
-            SROy4.append(getSRO_4())
+            SROy1.append(getSRO_1())
         if(i%saveFrequency==0 and i>2):
-            #writeGraphToXYZ(size+'_xIn='+str(indiumComposition)+'_T='+str(T)+' K_SRO_4_'+str(SROy4[-1])+'SwapsSoFar'+str(SwapsSoFar)+'.xyz')
+            #writeGraphToXYZ(size+'_xIn='+str(indiumComposition)+'_T='+str(T)+' K_SRO_1_'+str(SROy1[-1])+'SwapsSoFar'+str(SwapsSoFar)+'.xyz')
             pass
     print("\nOut of %i attempted atom swaps, %i were successful (ratio of %f)."%(numberOfSwaps,successfulSwaps,float(successfulSwaps)/numberOfSwaps))
     return successfulSwaps
@@ -280,7 +296,7 @@ def writeGraphToXYZ(myFilename):
     f.close()
     print("Graph exported as .xyz file.")
 
-def getSRO_4():
+def getSRO_1():
     """Returns the Warren-Cowley short range order parameter for the first
     nearest neighbour (l=1). See Chan, Liu and Zunger paper for more
     information. DOI: 10.1103/PhysRevB.82.045112 """
@@ -288,33 +304,35 @@ def getSRO_4():
     global H
     for node in H:
         if H.node[node]['species'] == 'Ga':
-            neighbours = getNeighbours(node,4,H)
+            neighbours = getNeighbours(node,1,H)
             numberOfIndiumNeighbours = 0
             for neighbour in neighbours:
                 if H.node[neighbour]['species'] == 'In':
                     numberOfIndiumNeighbours += 1
-            indiumCount.append(numberOfIndiumNeighbours/2.0) # e.g. for indiumComposition=0.5, numberofIndiumNeighbours would be 3 on average for a random composition but might fluctuate from site to site, and therefore indiumCount would be appended by 0.5 on average
+            indiumCount.append(numberOfIndiumNeighbours/6.0) # e.g. for indiumComposition=0.5, numberofIndiumNeighbours would be 3 on average for a random composition but might fluctuate from site to site, and therefore indiumCount would be appended by 0.5 on average
     indiumProbability = sum(indiumCount)/len(indiumCount) # this calculates that average!
     return (1 - (indiumProbability/indiumComposition))
+    
 
 
 
-def graphSRO_4():
-    print ("Graphing SRO_2cc... Please wait")
+
+def graphSRO_1():
+    print ("Graphing SRO_1ac... Please wait")
     import matplotlib.pyplot as plt
-    plt.plot(SROx,SROy4)
+    plt.plot(SROx,SROy1)
     plt.xlabel('Step')
-    plt.ylabel('SRO_4_'+str(indiumComposition)+'_'+str(T)+'K')
+    plt.ylabel('SRO_1_'+str(indiumComposition)+'_'+str(T)+'K')
     plt.show()
 
-def printSRO_4():
+def printSRO_1():
     print('Steps:')
     print(SROx)
-    print('SRO_4:')
-    print(SROy4)
+    print('SRO_1:')
+    print(SROy1)
 
 def main():
-    #pr=cProfile.Profile()
+   #pr=cProfile.Profile()
     # this means it grabs the filename from first argument when you run the script from the command line
     # alternatively could change this to "filename = '64-64-10-graph.gpickle'" or similar
     #pr.enable()
@@ -346,13 +364,14 @@ def main():
     #This speeds up the code
     lenJ=len(J)
 
-    #SKIP TO LINE 104 IF THE GRID IS ALREDY RANDOMISED
-    
+   
     ###############################################################################
     print("Randomising initial configuration to match an overall composition of InₓGa₁₋ₓN (x=%f)." % indiumComposition)
     totalNumberOfGaSites = 0
     currentNumberOfInAtoms = 0
-    
+
+
+
     for node in H: # count up number of Ga sites in our graph
         if H.node[node]['species'] == 'Ga':
             totalNumberOfGaSites += 1
@@ -362,28 +381,30 @@ def main():
         raise Exception("Code assumes that there are no In atoms in the initial graph.")
     desiredNumberOfInAtoms = int(math.floor(indiumComposition*totalNumberOfGaSites))
     #etaRandomising = ETA(desiredNumberOfInAtoms)
+
+
     for i in range(desiredNumberOfInAtoms):
-        #etaRandomising.print_status()
+       #etaRandomising.print_status()
         randomNode=J[random.randint(0,lenJ-1)]# find a random node
-        while H.node[randomNode]['species']!='Ga': # and ensure random node is Ga and part of teh non-surface subgraph H
+        while H.node[randomNode]['species']!='Ga': # and ensure random node is Ga and not on the 'surface' of the quantum well
                 randomNode=J[random.randint(0,lenJ-1)]
         H.node[randomNode]['species']='In' # change node to In
         currentNumberOfInAtoms += 1
-    print("\nInitial composition randomised. Out of a total of %i Ga sites, %i are now occupied by In atoms for a overall composition of %f." % (totalNumberOfGaSites,currentNumberOfInAtoms,float(currentNumberOfInAtoms)/totalNumberOfGaSites)) 
+    print("\nInitial composition randomised. Out of a total of %i Ga sites, %i are now occupied by In atoms for a overall composition of %f." % (totalNumberOfGaSites,currentNumberOfInAtoms,float(currentNumberOfInAtoms)/totalNumberOfGaSites))   
     ###############################################################################
-    runIsingModel_SRO_4(steps)
-    
-    graphSRO_4()
-    printSRO_4()
-    a = numpy.asarray([SROx,SROy4])
-    numpy.savetxt('CSV_'+size+'_xIn='+str(indiumComposition)+'_T='+str(T)+' K_SRO_4'+'.csv', a, delimiter=",")    
-    #writeGraphToXYZ(size+'_xIn='+str(indiumComposition)+'_T='+str(T)+' K_SRO_4_'+str(SROy4[-1])+'.xyz')
-    #nx.write_gpickle(G,size+'_xIn='+str(indiumComposition)+'_T='+str(T)+' K_SRO_4_'+str(SROy4[-1])+'.gpickle')
+    runIsingModel_SRO_1(steps)
+    #graphSRO_1()
+    printSRO_1()
+    a = numpy.asarray([SROx,SROy1])
+    numpy.savetxt('CSV_' + size + '_xIn=' + str(indiumComposition) + '_T=' + str(T) + 'K_SRO_1' + '.csv', a, delimiter=",")
+    #saveDoto()
+    writeGraphToXYZ(size + '_xIn=' + str(indiumComposition) + '_T=' + str(T) + 'K_SRO_1=' + str(SROy1[-1]) + '.xyz')
+    nx.write_gpickle(G,size + '_xIn=' + str(indiumComposition) + '_T=' + str(T) + 'K_SRO_1=' + str(SROy1[-1]) + '.gpickle')
     #pr.disable()
     #s=StringIO.StringIO()
     #ps=pstats.Stats(pr,stream=s).sort_stats('cumulative')
     #ps.print_stats(0.05)
     #print s.getvalue()
-    
+
 if __name__=='__main__':
     main()
