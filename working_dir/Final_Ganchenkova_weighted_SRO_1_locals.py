@@ -40,7 +40,9 @@ G=''
 H=''
 J=''
 size ='32x32x5'
-filename = r'input/%s-quantum-well-graph-Ganchenkova.gpickle'%size
+#filename = r'input/%s-quantum-well-graph-Ganchenkova.gpickle'%size
+#filename = r'make_crystal/v2_crystal/%s-graph-Ganchenkova.gpickle'%size
+filename = r'make_crystal/v1_crystal/%s-quantum-well-graph-Ganchenkova.gpickle'%size
 lenJ=''
 # for graphing SRO
 SROx = []
