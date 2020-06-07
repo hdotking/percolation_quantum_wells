@@ -65,7 +65,7 @@ kB = 8.6173324*(10e-5) # eV
 T = 773 # K
 kT = kB*T
 indiumComposition = 0.5
-steps = 5000000
+steps = 500000
 statsFrequency = 10000  # generate statistics every statsFrequency steps
 saveFrequency = int(steps)/10
 ##############################################################################
@@ -78,23 +78,37 @@ def getNeighbours(i,k,P=None):
     """
 
     global edgesDict
-    key=(i,k)
+    key=(i,k)  # i want to be able to input a node and a weight and get all the neighbours pos
     if key in edgesDict:
         return edgesDict[key]
     else:
         global H
         if P:
             H=P
-        edges = H.edges(i,k)   
-        edges_of_weight = []
-        neighbours = []
-        for edge in edges:
-            if edge[2]['weight'] == k:
-                edges_of_weight.append(edge)
-        for anElement in edges_of_weight:
-            neighbours.append(anElement[1])
-        edgesDict[key]=neighbours
-        return neighbours
+        ###edges = H.edges(i,k)  # should return:
+        #### [(i, 320, {'weight': 2}), (i, 1, {'weight': 1}),..., (i, 9930, {'weight': 2})] 
+        #### instead it returns:
+        #### [(i, 320, None), (i, 1, None),..., (i, 9930, None)] 
+        ###edges_of_weight = []
+        ###neighbours = []  # this needs to be a list of neighbours of a specific weight, k.
+        ###for edge in edges:
+        ###    print(edge)
+        ###    if edge[2]['weight'] == k:
+        ###    ##iif H[edge[0]][edge[1]]["weight"] == k:
+        ###        edges_of_weight.append(edge)
+        ###for anElement in edges_of_weight:
+        ###    neighbours.append(anElement[1])
+        ###edgesDict[key]=neighbours
+
+        # python3 implementation
+        neighbours_wt_k = []
+        all_nbrs = list(H[i].keys())
+        for a_nbr in all_nbrs:
+            if H[i][a_nbr]['weight'] ==  k:
+                neighbours_wt_k.append(a_nbr)
+
+        edgesDict[key] = neighbours_wt_k
+        return neighbours_wt_k
        
 def attemptAtomSwap():
     """
@@ -146,14 +160,14 @@ def attemptAtomSwap():
     #while not randomInNode or not randomGaNode:
     #    randomNodes = random.sample(H.node,2)
     #    for r in randomNodes:
-    #        if H.node[r]['species']=='Ga':
+    #        if H.nodes[r]['species']=='Ga':
     #            randomGaNode=r
     #        else:
     #            randomInNode=r
 
     while not randomInNode or not randomGaNode:
         r=J[random.randint(0,lenJ-1)]
-        if H.node[r]['species']=='Ga':
+        if H.nodes[r]['species']=='Ga':
             randomGaNode=r
         else:
             randomInNode=r
@@ -187,7 +201,7 @@ def attemptAtomSwap():
     acceptSwap = False
     if Ein > Efi or random.random() < probabilityOfAcceptance:
         acceptSwap = True
-        G.node[randomInNode]['species'],G.node[randomGaNode]['species'] = 'Ga','In'
+        G.nodes[randomInNode]['species'],G.nodes[randomGaNode]['species'] = 'Ga','In'
     #DEBUG STRING ON NEXT LINE. UNCOMMENT TO PRINT INFO DURING CALCULATION.
     #print("InitGa: %i, FinalGa: %i, dH: %f, P: %f, Accepted: %r" % (initialNumberOfGaGaBonds,finalNumberOfGaGaBonds,deltaH,probabilityOfAcceptance,acceptSwap))
     
@@ -224,7 +238,7 @@ def get_N_A_1ac(i):
     neighboursOfRandomNode = getNeighbours(i,1)
     numberOfIndiumNeighbours = 0
     for neighbour in neighboursOfRandomNode:
-        if G.node[neighbour]['species'] == 'In':
+        if G.nodes[neighbour]['species'] == 'In':
             numberOfIndiumNeighbours += 1 
     return numberOfIndiumNeighbours
 
@@ -235,7 +249,7 @@ def get_N_A_1aa(i):
     neighboursOfRandomNode = getNeighbours(i,2)
     numberOfIndiumNeighbours = 0
     for neighbour in neighboursOfRandomNode:
-        if G.node[neighbour]['species'] == 'In':
+        if G.nodes[neighbour]['species'] == 'In':
             numberOfIndiumNeighbours += 1 
     return numberOfIndiumNeighbours
     
@@ -246,7 +260,7 @@ def get_N_A_2ac(i):
     neighboursOfRandomNode = getNeighbours(i,3)
     numberOfIndiumNeighbours = 0
     for neighbour in neighboursOfRandomNode:
-        if G.node[neighbour]['species'] == 'In':
+        if G.nodes[neighbour]['species'] == 'In':
             numberOfIndiumNeighbours += 1 
     return numberOfIndiumNeighbours
 
@@ -257,12 +271,12 @@ def get_N_A_2cc(i):
     neighboursOfRandomNode = getNeighbours(i,4)
     numberOfIndiumNeighbours = 0
     for neighbour in neighboursOfRandomNode:
-        if G.node[neighbour]['species'] == 'In':
+        if G.nodes[neighbour]['species'] == 'In':
             numberOfIndiumNeighbours += 1 
     return numberOfIndiumNeighbours
 
 def runIsingModel_SRO_1(numberOfSwaps):
-    """ 
+    """
     Runs attemptAtomSwap() numberOfSwaps times.
     """
     ns=float(numberOfSwaps)
@@ -276,7 +290,7 @@ def runIsingModel_SRO_1(numberOfSwaps):
         if attemptAtomSwap():
             successfulSwaps += 1
         if(i%statsFrequency==0):
-            print float(i)/ns*100,'% Done'
+            print (float(i)/ns*100,'% Done')
             #etaIsing.print_status()
             SROx.append(i)
             SROy1.append(getSRO_1())
@@ -291,7 +305,7 @@ def writeGraphToXYZ(myFilename):
     f.write(str(len(G))+'\n')
     f.write('Atoms. File created from networkx graph by '+os.path.basename(__file__)+'\n')
     for nodeindex in G:
-        atom = G.node[nodeindex]
+        atom = G.nodes[nodeindex]
         f.write(str(atom['species'])+' '+str(atom['x'])+' '+str(atom['y'])+' '+str(atom['z'])+'\n')
     f.close()
     print("Graph exported as .xyz file.")
@@ -303,11 +317,11 @@ def getSRO_1():
     indiumCount = []
     global H
     for node in H:
-        if H.node[node]['species'] == 'Ga':
+        if H.nodes[node]['species'] == 'Ga':
             neighbours = getNeighbours(node,1,H)
             numberOfIndiumNeighbours = 0
             for neighbour in neighbours:
-                if H.node[neighbour]['species'] == 'In':
+                if H.nodes[neighbour]['species'] == 'In':
                     numberOfIndiumNeighbours += 1
             indiumCount.append(numberOfIndiumNeighbours/6.0) # e.g. for indiumComposition=0.5, numberofIndiumNeighbours would be 3 on average for a random composition but might fluctuate from site to site, and therefore indiumCount would be appended by 0.5 on average
     indiumProbability = sum(indiumCount)/len(indiumCount) # this calculates that average!
@@ -350,15 +364,15 @@ def main():
     # Assuming our initial graph is pure GaN, we need to create a random initial
     # composition.
     J=[] #J will be our list that holds our nodes where surface == False 
-    print 'size is',size.split('x')[-1]
+    print ('size is',size.split('x')[-1])
     if size.split('x')[-1]=='1':
         for node in G:
-            if G.node[node]['surface']!=False:
+            if G.nodes[node]['surface']!=False:
                 J.append(node)
         H = G.subgraph(J) #H is the subgraph which contains only surface atoms.
     else:
         for node in G:
-            if G.node[node]['surface']==False:
+            if G.nodes[node]['surface']==False:
                 J.append(node)
         H = G.subgraph(J) #H is the subgraph which contains only surface atoms.
     #This speeds up the code
@@ -373,9 +387,9 @@ def main():
 
 
     for node in H: # count up number of Ga sites in our graph
-        if H.node[node]['species'] == 'Ga':
+        if H.nodes[node]['species'] == 'Ga':
             totalNumberOfGaSites += 1
-        if H.node[node]['species'] == 'In':
+        if H.nodes[node]['species'] == 'In':
             currentNumberOfInAtoms += 1
     if currentNumberOfInAtoms != 0:
         raise Exception("Code assumes that there are no In atoms in the initial graph.")
@@ -386,11 +400,11 @@ def main():
     for i in range(desiredNumberOfInAtoms):
        #etaRandomising.print_status()
         randomNode=J[random.randint(0,lenJ-1)]# find a random node
-        while H.node[randomNode]['species']!='Ga': # and ensure random node is Ga and not on the 'surface' of the quantum well
+        while H.nodes[randomNode]['species']!='Ga': # and ensure random node is Ga and not on the 'surface' of the quantum well
                 randomNode=J[random.randint(0,lenJ-1)]
-        H.node[randomNode]['species']='In' # change node to In
+        H.nodes[randomNode]['species']='In' # change node to In
         currentNumberOfInAtoms += 1
-    print("\nInitial composition randomised. Out of a total of %i Ga sites, %i are now occupied by In atoms for a overall composition of %f." % (totalNumberOfGaSites,currentNumberOfInAtoms,float(currentNumberOfInAtoms)/totalNumberOfGaSites))   
+    print("\nInitial composition randomised. Out of a total of %i Ga sites, %i are now occupied by In atoms for a overall composition of %f." % (totalNumberOfGaSites,currentNumberOfInAtoms,float(currentNumberOfInAtoms)/totalNumberOfGaSites))
     ###############################################################################
     runIsingModel_SRO_1(steps)
     #graphSRO_1()

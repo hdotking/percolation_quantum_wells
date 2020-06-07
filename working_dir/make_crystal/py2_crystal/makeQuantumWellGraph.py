@@ -61,20 +61,20 @@ qwFractionalPositions = qw.get_scaled_positions()
 G = nx.Graph()
 for i in range(len(qw)):
     G.add_node(i)
-    G.nodes[i]["species"] = "Ga"
-    G.nodes[i]["x"] = float(qwAbsolutePositions[i][0])
-    G.nodes[i]["y"] = float(qwAbsolutePositions[i][1])
-    G.nodes[i]["z"] = float(qwAbsolutePositions[i][2])
-    G.nodes[i]["fx"] = float(qwFractionalPositions[i][0])
-    G.nodes[i]["fy"] = float(qwFractionalPositions[i][1])
-    G.nodes[i]["fz"] = float(qwFractionalPositions[i][2])
+    G.node[i]["species"] = "Ga"
+    G.node[i]["x"] = float(qwAbsolutePositions[i][0])
+    G.node[i]["y"] = float(qwAbsolutePositions[i][1])
+    G.node[i]["z"] = float(qwAbsolutePositions[i][2])
+    G.node[i]["fx"] = float(qwFractionalPositions[i][0])
+    G.node[i]["fy"] = float(qwFractionalPositions[i][1])
+    G.node[i]["fz"] = float(qwFractionalPositions[i][2])
     if qwFractionalPositions[i][2] < (0.1/nc) or qwFractionalPositions[i][2] > (1-(0.6/nc)):
         if detectSurfaces:
-            G.nodes[i]["surface"] = True
+            G.node[i]["surface"] = True
         else:
-            G.nodes[i]["surface"] = False
+            G.node[i]["surface"] = False
     else:
-        G.nodes[i]["surface"] = False
+        G.node[i]["surface"] = False
 
 # Now for the cool stuff!
 print("Constructing neighbour list.")
@@ -104,8 +104,7 @@ def findEdges(outer_radius, inner_radius, weight, print_stats):
         neighbours = list(set(outer_neighbours)-set(inner_neighbours))
         for neighbour in neighbours:
             if neighbour != node:
-                G.add_edge(node, neighbour, weight = weight)
-        # print("This is being printed", G[node][neighbour])
+                    G.add_edge(node, neighbour, weight=weight)
     if print_stats:
         neighbourList = []
         for node in G:
@@ -116,8 +115,7 @@ def getEdgesWithWeight(node, weight):
     edges = G.edges(node, weight)
     selected_edges = []
     for edge in edges:
-        # the line below used to be edge[2]['weight'] == weight. is this doing the same?
-        if G[edge[0]][edge[1]]["weight"] == weight: # get the weight for each edge and see if it"s the weight we want
+        if edge[2]["weight"] == weight: # get the weight for each edge and see if it"s the weight we want
             selected_edges.append(edge)
     return selected_edges
 
@@ -153,5 +151,5 @@ if export:
     if wrapZ:
         nx.write_gpickle(G, str(na) + "x" + str(nb) + "x" + str(nc) + "-bulk-graph.gpickle")
     else:
-        nx.write_gpickle(G, "new" +str(na) + "x" + str(nb) + "x" + str(nc) + "-quantum-well-graph.gpickle")
+        nx.write_gpickle(G, str(na) + "x" + str(nb) + "x" + str(nc) + "-quantum-well-graph.gpickle")
     print ("Graph constructed and exported successfully.")
