@@ -4,9 +4,10 @@
 Run the makeQuantumWell.py script to create your own quantum well.
 E.g) to get a quantum well which is 10x10x5 InGaN unit cells in size: run the code as follows:
 
+``` 
 python makeQuantumWellGraph.py 10 5
->> 10x10x5-quantum-well-graph,gpickle
-
+>>10x10x5-quantum-well-graph.gpickle
+```
 ## Run the Ising model to simulate annealing
 The output file can then then be used as an argument for getDecompositionCalculateSRO1.py 
 
