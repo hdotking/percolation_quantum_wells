@@ -53,6 +53,11 @@ J=''
 size ='32x32x5'
 filename = sys.argv[1]
 
+<<<<<<< HEAD
+=======
+# filename = r'make_crystal\new32x32x5-quantum-well-graph.gpickle'
+print(filename)
+>>>>>>> ed73f0ccdea2b8d0411ff15dfd0ff2bc3515c8a8
 lenJ=''
 # for graphing SRO
 SROx = []
