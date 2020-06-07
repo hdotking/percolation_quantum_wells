@@ -51,10 +51,8 @@ G=''
 H=''
 J=''
 size ='32x32x5'
-#filename = r'input/%s-quantum-well-graph-Ganchenkova.gpickle'%size
-#filename = r'make_crystal/v2_crystal/%s-graph-Ganchenkova.gpickle'%size
-#filename = r'%s-graph-Ganchenkova.gpickle'%size
 filename = sys.argv[1]
+
 lenJ=''
 # for graphing SRO
 SROx = []
@@ -66,8 +64,8 @@ T = 773 # K
 kT = kB*T
 indiumComposition = 0.5
 steps = 500000
-statsFrequency = 10000  # generate statistics every statsFrequency steps
-saveFrequency = int(steps)/10
+statsFrequency = 1000  # generate statistics every statsFrequency steps
+saveFrequency = int(steps)/1000
 ##############################################################################
 edgesDict={}
 
@@ -104,7 +102,7 @@ def getNeighbours(i,k,P=None):
         neighbours_wt_k = []
         all_nbrs = list(H[i].keys())
         for a_nbr in all_nbrs:
-            if H[i][a_nbr]['weight'] ==  k:
+            if H[i][a_nbr]['weight'] == k:
                 neighbours_wt_k.append(a_nbr)
 
         edgesDict[key] = neighbours_wt_k
@@ -294,6 +292,7 @@ def runIsingModel_SRO_1(numberOfSwaps):
             #etaIsing.print_status()
             SROx.append(i)
             SROy1.append(getSRO_1())
+            # SROy1.append(1)
         if(i%saveFrequency==0 and i>2):
             #writeGraphToXYZ(size+'_xIn='+str(indiumComposition)+'_T='+str(T)+' K_SRO_1_'+str(SROy1[-1])+'SwapsSoFar'+str(SwapsSoFar)+'.xyz')
             pass
@@ -318,7 +317,8 @@ def getSRO_1():
     global H
     for node in H:
         if H.nodes[node]['species'] == 'Ga':
-            neighbours = getNeighbours(node,1,H)
+            #neighbours = getNeighbours(node,1,H)
+            neighbours = getNeighbours(node,1)
             numberOfIndiumNeighbours = 0
             for neighbour in neighbours:
                 if H.nodes[neighbour]['species'] == 'In':
