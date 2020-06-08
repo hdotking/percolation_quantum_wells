@@ -20,7 +20,8 @@ def generate_random_3Dgraph(n_nodes, radius, seed=None):
     # Create random 3D network
     G = nx.random_geometric_graph(n_nodes, radius, pos=pos)
 
-    G =nx.get_node_attributes(G, 'pos')
+    return G
+
 # visualise with size and color
 
 def network_plot_3D(G, angle, save=False):
@@ -83,7 +84,13 @@ def network_plot_3D(G, angle, save=False):
 
 # visualise with 200 nodes
 
-n=200
-G = generate_random_3Dgraph(n_nodes=n, radius=0.25, seed=1)
-network_plot_3D(G,0, save=False)
+n = 200
+Gee = generate_random_3Dgraph(n_nodes=n, radius=0.25, seed=1)
+network_plot_3D(Gee, 0, save=False)
 
+# for k in range(20, 201, 1):
+#     G = generate_random_3Dgraph(n_nodes=k, radius=0.25, seed=1)
+#     angle = (k - 20) * 360 / (200 - 20)
+#
+#     network_plot_3D(G, angle, save=True)
+#     print(angle)

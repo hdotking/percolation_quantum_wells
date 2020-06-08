@@ -42,10 +42,9 @@ if len(sys.argv) > 2:
 G=''
 H=''
 J=''
-size ='32x32x5'
 filename = sys.argv[1]
+size =filename.split("-")[0]
 
-# filename = r'make_crystal\new32x32x5-quantum-well-graph.gpickle'
 print(filename)
 
 lenJ=''
