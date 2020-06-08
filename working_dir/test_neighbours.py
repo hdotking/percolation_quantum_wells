@@ -15,6 +15,5 @@ J = nx.Graph()
 J.add_nodes_from([1, 2, 3, 4, 5])
 J.add_edges_from([(1, 2, {'weight': 1}), (1, 3, {'weight': 2}), (1, 4, {'weight': 3}), (1, 5, {'weight': 4})])
 
-
-
+print(nx.get_node_attributes(J, 'weight'))
 
