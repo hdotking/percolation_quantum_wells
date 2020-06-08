@@ -11,4 +11,4 @@ python-dateutil==2.8.1
 retrying==1.3.3
 scipy==1.4.1
 six==1.15.0
-xyz2graph==0.1
+-i https://test.pypi.org/simple/ xyz2graph
