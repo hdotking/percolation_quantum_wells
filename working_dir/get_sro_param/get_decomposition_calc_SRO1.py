@@ -43,7 +43,14 @@ G=''
 H=''
 J=''
 filename = sys.argv[1]
-size =filename.split("-")[0]
+
+if '/' in filename:
+    size = filename.split("/")[-1]
+    size = size.split("-")[0]
+
+if "\\" in filename:
+    size = filename.split("\\")[-1]
+    size = size.split("-")[0]
 
 print(filename)
 
@@ -267,7 +274,7 @@ def runIsingModel_SRO_1(numberOfSwaps):
             SROx.append(i)
             SROy1.append(getSRO_1())
         if(i%saveFrequency==0 and i>2):
-            #writeGraphToXYZ(size+'_xIn='+str(indiumComposition)+'_T='+str(T)+' K_SRO_1_'+str(SROy1[-1])+'SwapsSoFar'+str(SwapsSoFar)+'.xyz')
+            #writeGraphToXYZ(size+'-xIn='+str(indiumComposition)+'_T='+str(T)+' K_SRO_1_'+str(SROy1[-1])+'SwapsSoFar'+str(SwapsSoFar)+'.xyz')
             pass
     print("\nOut of %i attempted atom swaps, %i were successful (ratio of %f)."%(numberOfSwaps,successfulSwaps,float(successfulSwaps)/numberOfSwaps))
     return successfulSwaps
@@ -381,10 +388,10 @@ def main():
     #graphSRO_1()
     printSRO_1()
     a = numpy.asarray([SROx,SROy1])
-    numpy.savetxt('CSV_' + size + '_xIn=' + str(indiumComposition) + '_T=' + str(T) + 'K_SRO_1' + '.csv', a, delimiter=",")
+    numpy.savetxt('CSV_' + size + '-xIn=' + str(indiumComposition) + '_T=' + str(T) + 'K_SRO_1' + '.csv', a, delimiter=",")
     #saveDoto()
-    writeGraphToXYZ(size + '_xIn=' + str(indiumComposition) + '_T=' + str(T) + 'K_SRO_1=' + str(SROy1[-1]) + '.xyz')
-    nx.write_gpickle(G,size + '_xIn=' + str(indiumComposition) + '_T=' + str(T) + 'K_SRO_1=' + str(SROy1[-1]) + '.gpickle')
+    writeGraphToXYZ(size + '-xIn=' + str(indiumComposition) + '_T=' + str(T) + 'K_SRO_1=' + str(SROy1[-1]) + '.xyz')
+    nx.write_gpickle(G,size + '-xIn=' + str(indiumComposition) + '_T=' + str(T) + 'K_SRO_1=' + str(SROy1[-1]) + '.gpickle')
 
 if __name__=='__main__':
     main()
