@@ -5,6 +5,7 @@ import os
 import numpy
 import sys
 
+import time
 
 # Current structure of program
 # 1. Loads graph made from makeCrystalGraph.py & Randomises initial structure
@@ -12,6 +13,8 @@ import sys
 # 4. User can then choose to run additional functions, e.g.
 #    graphSRO()
 #    isingModel()
+
+start = time.time()
 
 
 class SimulateAnnealing:
@@ -29,7 +32,7 @@ class SimulateAnnealing:
         self.kT = kB * self.T
         self.In_composition = 0.5
         self.edgesDict = {}
-        self.steps = 500
+        self.steps = 500000
         self.statsFrequency = 1000  # generate statistics every statsFrequency steps
         self.saveFrequency = int(self.steps) / 1000
 
@@ -71,7 +74,6 @@ class SimulateAnnealing:
                 if not self.G.nodes[node]['surface']:
                     self.J.append(node)
             self.H = self.G.subgraph(self.J)  # H is the subgraph which contains only surface atoms.
-
 
         # This speeds up the code as we are NOT attempting to swap the fixed surface atoms
         print("Randomising initial configuration to match an overall composition of InₓGa₁₋ₓN "
@@ -301,10 +303,11 @@ class SimulateAnnealing:
                 for neighbour in neighbours:
                     if self.H.nodes[neighbour]['species'] == 'In':
                         numberOfIndiumNeighbours += 1
-                indiumCount.append(
-                    numberOfIndiumNeighbours / 6.0)  # e.g. for indiumComposition=0.5, numberofIndiumNeighbours would be 3 on average for a random composition but might fluctuate from site to site, and therefore indiumCount would be appended by 0.5 on average
+# e.g. for indiumComposition=0.5, numberofIndiumNeighbours would be 3 on average for a random composition
+# but might fluctuate from site to site, and therefore indiumCount would be appended by 0.5 on average
+                indiumCount.append(numberOfIndiumNeighbours / 6.0)
         indiumProbability = sum(indiumCount) / len(indiumCount)  # this calculates that average!
-        return (1 - (indiumProbability / self.In_composition))
+        return 1 - (indiumProbability / self.In_composition)
 
     def getNeighbours(self, node, weight):
         """
@@ -363,3 +366,7 @@ if len(sys.argv) > 2:
 
 sa = SimulateAnnealing(sys.argv[1])
 sa.save_output()
+
+end = time.time()
+
+print(end - start)

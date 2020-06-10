@@ -153,5 +153,5 @@ if export:
     if wrapZ:
         nx.write_gpickle(G, str(na) + "x" + str(nb) + "x" + str(nc) + "-bulk-graph.gpickle")
     else:
-        nx.write_gpickle(G, "new" +str(na) + "x" + str(nb) + "x" + str(nc) + "-quantum-well-graph.gpickle")
+        nx.write_gpickle(G, str(na) + "x" + str(nb) + "x" + str(nc) + "-quantum-well-graph.gpickle")
     print ("Graph constructed and exported successfully.")

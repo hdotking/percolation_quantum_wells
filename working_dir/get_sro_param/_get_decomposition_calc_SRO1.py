@@ -17,7 +17,9 @@ import random
 import os
 import numpy
 import sys
+import time
 
+start = time.time()
 #import cProfile
 #import pstats
 #import StringIO
@@ -64,7 +66,7 @@ kB = 8.6173324*(10e-5) # eV
 T = 773 # K
 kT = kB*T
 indiumComposition = 0.5
-steps = 500000
+steps = 50000
 statsFrequency = 1000  # generate statistics every statsFrequency steps
 saveFrequency = int(steps)/1000
 ##############################################################################
@@ -395,3 +397,7 @@ def main():
 
 if __name__=='__main__':
     main()
+
+end = time.time()
+
+print(end - start)

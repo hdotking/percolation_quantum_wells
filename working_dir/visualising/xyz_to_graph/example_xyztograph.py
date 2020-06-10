@@ -12,11 +12,22 @@ mg = MolGraph()
 filename = sys.argv[1]
 mg.read_xyz(filename)
 
+if '/' in filename:
+    print('input with forward slash')
+    size = filename.split("/")[-1]
+    size = size.split("-")[0]
+elif "\\" in filename:
+    print('input with back slash')
+    size = filename.split("\\")[-1]
+    size = size.split("-")[0]
+else:
+    size = filename.split("-")[0]
+
 # Create the Plotly figure object
 fig = to_plotly_figure(mg)
 
 # Plot the figure
-offline.plot(fig)
+offline.plot(fig, filename=f"{size}-quantum-well")
 
 end = time.time()
 
