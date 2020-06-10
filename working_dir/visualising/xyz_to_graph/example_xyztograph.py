@@ -27,7 +27,7 @@ else:
 fig = to_plotly_figure(mg)
 
 # Plot the figure
-offline.plot(fig, filename=f"{size}-quantum-well")
+offline.plot(fig, filename=f"{size}-quantum-well.html")
 
 end = time.time()
 
