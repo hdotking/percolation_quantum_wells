@@ -1,6 +1,8 @@
 # How to analyse the percolation threshold of non-random alloys - InGaN
 
-![Alt text](working_dir/visualising/gif/16x16x5.gif)
+<p align="center">
+  <img width="460" height="300" src="working_dir/visualising/gif/16x16x5.gif">
+</p>
 
 ## See examples now!
 
