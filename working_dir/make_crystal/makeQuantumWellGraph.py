@@ -43,6 +43,7 @@ nc = int(sys.argv[2])
 
 a = 3.18
 c = 5.166
+# NOTE: ONLY 2 atoms per 'unit cell'
 atoms = Atoms([Atom("Ga", (0,        0,     0)),
                Atom("Ga", (1/3.,  1/3.,  1/2.))]) # only looking at Ga atoms!
 #               Atom("N", (0,        0,  3/8.)), 

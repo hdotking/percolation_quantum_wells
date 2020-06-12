@@ -30,13 +30,18 @@ class SimulateAnnealing:
 
         # Scientific constants
         kB = 8.6173324 * 10e-5  # eV
+
         # Simulation parameters
         self.T = 773  # K
         self.kT = kB * self.T
+        self.steps = 100000
         self.In_composition = 0.5
         self.edgesDict = {}
-        self.steps = 5000000
-        self.statsFrequency = 1000  # generate statistics every statsFrequency steps
+        self.sro_1_dict = {}
+        self.sro_2_dict = {}
+        self.sro_3_dict = {}
+        self.sro_4_dict = {}
+        self.statsFrequency = 10000  # generate statistics every statsFrequency steps
         self.saveFrequency = int(self.steps) / 1000
 
         # handles linux vs. windows issues with feeding input through command line
@@ -51,9 +56,6 @@ class SimulateAnnealing:
         else:
             size = filename.split("-")[0]
 
-        print(filename)
-        print(size)
-
         self.size = size
         self.J = []  # J will be our list that holds our nodes where surface == False
 
@@ -67,11 +69,7 @@ class SimulateAnnealing:
 
         self.H = None
 
-        self.initialise_microstructure(self.G)
-
-        self.run_Ising_model_sro1(self.steps)
-
-    def initialise_microstructure(self, graph):
+    def initialise_microstructure(self):
 
         print('size is', self.size.split('x')[-1])
         if self.size.split('x')[-1] == '1':
@@ -83,7 +81,7 @@ class SimulateAnnealing:
             for node in self.G:
                 if not self.G.nodes[node]['surface']:
                     self.J.append(node)
-            self.H = self.G.subgraph(self.J)  # H is the subgraph which contains only surface atoms.
+            self.H = self.G.subgraph(self.J)  # H is the subgraph which contains only BULK atoms.
 
         # This speeds up the code as we are NOT attempting to swap the fixed surface atoms
         print("Randomising initial configuration to match an overall composition of InₓGa₁₋ₓN "
@@ -91,7 +89,7 @@ class SimulateAnnealing:
         tot_no_Ga_sites = 0
         curr_no_In_atoms = 0
 
-        for node in self.H:  # count up number of Ga sites in our graph
+        for node in self.H:  # count up number of Ga sites in our non-surface subgraph
             if self.H.nodes[node]['species'] == 'Ga':
                 tot_no_Ga_sites += 1
             if self.H.nodes[node]['species'] == 'In':
@@ -280,7 +278,7 @@ class SimulateAnnealing:
             if self.attempt_atom_swap():
                 successfulSwaps += 1
             if (i % self.statsFrequency == 0) or i ==0 or i == 10 or i == 100 or i == 500:
-                print(round(float(i),35) / ns * 100, '% Done')
+                print(round(float(i), 3) / ns * 100, '% Done')
                 self.SROx.append(i)
                 self.SROy1.append(self.getSRO_X(1))
                 self.SROy2.append(self.getSRO_X(2))
@@ -293,24 +291,25 @@ class SimulateAnnealing:
             num_steps, successfulSwaps, float(successfulSwaps) / num_steps))
         return successfulSwaps
 
-    # def writeGraphToXYZ(myFilename):
-    #     f = open(myFilename,'w')
-    #     f.write(str(len(G))+'\n')
-    #     f.write('Atoms. File created from networkx graph by '+os.path.basename(__file__)+'\n')
-    #     for nodeindex in G:
-    #         atom = G.nodes[nodeindex]
-    #         f.write(str(atom['species'])+' '+str(atom['x'])+' '+str(atom['y'])+' '+str(atom['z'])+'\n')
-    #     f.close()
-    #     print("Graph exported as .xyz file.")
-
-    def getSRO_X(self, x):
+    def getSRO_X(self, weight):
         """Returns the Warren-Cowley short range order parameter for the first
         nearest neighbour (x=weight). See Chan, Liu and Zunger paper for more
-        information. DOI: 10.1103/PhysRevB.82.045112 """
-        indiumCount = []
-        for node in self.H:
+        information. DOI: 10.1103/PhysRevB.82.045112
+        """
+
+        # get the number of In neighbours for each Ga atom in H.
+
+
+        #swap this out for a dict search for a specific weight in edgesDict?
+        # --
+        # add a 2nd dict to save the number of indium neighbours of each Ga atom
+        # ORRR ammend edgesDict to incorporate the species info, so we can search for Ga atoms only
+        fail_counter = 0
+        indiumCount = []  # - O(n*len(neighbours)) - n is proportional to the volume of q_well but the latter is <6
+        neighbours_count = []
+        for node in self.H:  # creating a Ga-only subgraph will reduce this to O(n)--> O(n*(1-Indium_composition))
             if self.H.nodes[node]['species'] == 'Ga':
-                neighbours = self.getNeighbours(node, x)
+                neighbours = self.getNeighbours(node, weight)
                 numberOfIndiumNeighbours = 0
                 for neighbour in neighbours:
                     if self.H.nodes[neighbour]['species'] == 'In':
@@ -318,23 +317,25 @@ class SimulateAnnealing:
 # e.g. for indiumComposition=0.5, numberofIndiumNeighbours would be 3 on average for a random composition
 # but might fluctuate from site to site, and therefore indiumCount would be appended by 0.5 on average
                 indiumCount.append(numberOfIndiumNeighbours / 6.0)
+            else:
+                fail_counter +=1
         indiumProbability = sum(indiumCount) / len(indiumCount)  # this calculates that average!
+
+
+        print('This is fail counter:', fail_counter)
         return 1 - (indiumProbability / self.In_composition)
 
     def getNeighbours(self, node, weight):
         """
-        input your node and the weight of the neighbours you wanna find, i and
-        k. Retrieve a list of the nodes of the kth neigbour.
+        input your node and the weight of the neighbours you wanna find
+        Retrieve a list of the nodes of the kth neigbour.
         """
-     # i want to be able to input a node and a weight and get all the neighbours pos
 
-
-        # check if we already have this key (reduce time complexity)
+        # check if we already have this key (reduce time complexity to O(1))
         key = (node, weight)
-
         if key in self.edgesDict:
             return self.edgesDict[key]
-        else:
+        else:  # O(n) time complexity
             # python3 implementation
             neighbours_with_wt = []
             all_nbrs = list(self.H[node].keys())
@@ -345,12 +346,12 @@ class SimulateAnnealing:
             self.edgesDict[key] = neighbours_with_wt
             return neighbours_with_wt
 
-    def writeGraphToXYZ(self, myFilename):
-        f = open(myFilename, 'w')
+    def writeGraphToXYZ(self, filename):
+        f = open(filename, 'w')
         f.write(str(len(self.G)) + '\n')
         f.write('Atoms. File created from networkx graph by ' + os.path.basename(__file__) + '\n')
-        for nodeindex in self.G:
-            atom = self.G.nodes[nodeindex]
+        for node_index in self.G:
+            atom = self.G.nodes[node_index]
             f.write(str(atom['species']) + ' ' + str(atom['x']) + ' ' + str(atom['y']) + ' ' + str(atom['z']) + '\n')
         f.close()
         print("Graph exported as .xyz file.")
@@ -358,27 +359,49 @@ class SimulateAnnealing:
     def save_output(self):
         SROx_out = numpy.asarray([self.SROx, self.SROy1, self.SROy2, self.SROy3, self.SROy4])
         numpy.savetxt('CSV_' + self.size + '-xIn=' + str(self.In_composition) + '_T=' + str(self.T) + 'K_SRO_X' + '.csv'
-                      ,SROx_out, delimiter=",")
-        self.writeGraphToXYZ(self.size + '-xIn=' + str(self.In_composition) + '_T=' + str(self.T) + 'K_SRO_X=' + str(self.SROy1[-1]) + '.xyz')
-        nx.write_gpickle(self.G, self.size + '-xIn=' + str(self.In_composition) + '_T=' + str(self.T) + 'K_SRO_X=' + str(
-            self.SROy1[-1]) + '.gpickle')
-
+                      , SROx_out, delimiter=",")
+        self.writeGraphToXYZ(self.size + '-xIn=' + str(self.In_composition) + '_T=' + str(self.T) + 'K_SRO_X=' +
+                             str(self.SROy1[-1]) + '.xyz')
+        nx.write_gpickle(self.G, self.size + '-xIn=' + str(self.In_composition) + '_T=' + str(self.T) + 'K_SRO_X=' +
+                         str(self.SROy1[-1]) + '.gpickle')
 
 ########################################################################################################################
 # Driver Code
+if __name__ == "__main__":
 
-try:
-    arg = sys.argv[1]
-except IndexError:
-    arg_zero = sys.argv[0]
-    raise SystemExit("Usage: " + str(arg_zero) + " <input_filename.gpickle>")
+    try:
+        arg = sys.argv[1]
+    except IndexError:
+        arg_zero = sys.argv[0]
+        raise SystemExit("Usage: " + str(arg_zero) + " <input_filename.gpickle>")
 
-if len(sys.argv) > 2:
-    raise SystemExit("Please enter the .gpickle file of the crystal structure to decompose")
+    if len(sys.argv) > 2:
+        raise SystemExit("Please enter the .gpickle file of the crystal structure to decompose")
 
-sa = SimulateAnnealing(sys.argv[1])
-sa.save_output()
+    sa = SimulateAnnealing(sys.argv[1])
+    sa.initialise_microstructure()
+    sa.run_Ising_model_sro1(sa.steps)
+    sa.save_output()
 
-end = time.time()
+    end = time.time()
 
-print(end - start)
+    print(end - start)
+    key_list = list(sa.edgesDict.keys())
+
+    # print(sa.nc)
+    # do we have all of the neighbours of all of the nodes here?
+    # Yes
+    # for a 3x3x3 crystal , we have 2 atoms per 'unit cell'
+    # therefore 27*2 atoms in total
+    # BUT 3*3*2 of those will be surface atoms - two sheets
+    # These surface atoms will not be swapping, but will count towards neighbours)
+    # Therefore edges dict will NOT use these as keys, but will use them in their values
+    # hence the counter below will show 54 - 18 = 36 atoms. The number of keys in edgesDict
+
+    # THIS MEANS THAT edgesDict contains ALL the atoms and weights that we need for getNeighbours()
+
+
+
+
+
+
