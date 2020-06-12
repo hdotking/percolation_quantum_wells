@@ -86,29 +86,29 @@ class SimulateAnnealing:
         # This speeds up the code as we are NOT attempting to swap the fixed surface atoms
         print("Randomising initial configuration to match an overall composition of InₓGa₁₋ₓN "
               f"(x={self.In_composition})")
-        tot_no_Ga_sites = 0
-        curr_no_In_atoms = 0
+        tot_no_Ga_atms = 0
+        curr_no_In_atms = 0
 
         for node in self.H:  # count up number of Ga sites in our non-surface subgraph
             if self.H.nodes[node]['species'] == 'Ga':
-                tot_no_Ga_sites += 1
+                tot_no_Ga_atms += 1
             if self.H.nodes[node]['species'] == 'In':
-                curr_no_In_atoms += 1
-        if curr_no_In_atoms != 0:
+                curr_no_In_atms += 1
+        if curr_no_In_atms != 0:
             raise Exception("Code assumes that there are no In atoms in the initial graph.")
-        target_no_In_atoms = int(math.floor(self.In_composition * tot_no_Ga_sites))
+        target_no_In_atoms = int(math.floor(self.In_composition * tot_no_Ga_atms))
 
         for i in range(target_no_In_atoms):
             randomNode = self.J[random.randint(0, len(self.J) - 1)]  # find a random node
             while self.H.nodes[randomNode]['species'] != 'Ga':
                 randomNode = self.J[random.randint(0, len(self.J) - 1)]
             self.H.nodes[randomNode]['species'] = 'In'  # change node to In
-            curr_no_In_atoms += 1
+            curr_no_In_atms += 1
 
         print(
-            f"\nInitial composition randomised. Out of a total of {tot_no_Ga_sites} Ga sites,"
-            f"{curr_no_In_atoms} are now occupied by In atoms for"
-            f"an overall composition of {float(curr_no_In_atoms) / tot_no_Ga_sites}.")
+            f"\nInitial composition randomised. Out of a total of {tot_no_Ga_atms} Ga sites,"
+            f"{curr_no_In_atms} are now occupied by In atoms for"
+            f"an overall composition of {float(curr_no_In_atms) / tot_no_Ga_atms}.")
 
     def attempt_atom_swap(self):
         """
@@ -153,44 +153,59 @@ class SimulateAnnealing:
 
         Plug the value into the ProbabilityOfAcceptance and the rest is history.
         """
-        rnd_In_node = None
-        rnd_Ga_Node = None
+        rnd_In_atm = None
+        rnd_Ga_atm = None
         # pick an In atom at random NOT in the surface
 
-        while not rnd_In_node or not rnd_Ga_Node:
-            rnd_node = self.J[random.randint(0, len(self.J) - 1)]
-            if self.H.nodes[rnd_node]['species'] == 'Ga':
-                rnd_Ga_Node = rnd_node
+        while not rnd_In_atm or not rnd_Ga_atm:
+            rnd_atm = self.J[random.randint(0, len(self.J) - 1)]
+            if self.H.nodes[rnd_atm]['species'] == 'Ga':
+                rnd_Ga_atm = rnd_atm
             else:
-                rnd_In_node = rnd_node
+                rnd_In_atm = rnd_atm
 
         # +1 includes counts the Indium atom that we are looking for neighbours for in the count
         # Otherwise this could count ZERO In-In pairs when get_N_A_XXX() returns zero In neighbours
-        # Must +1for ALL as well because there should be an In atom in the position of the Ga post swap
 
-        NumberOfInAtoms_In_site = 1 + self.get_N_A_1ac(rnd_In_node) + self.get_N_A_1aa(rnd_In_node
-                                                                                       ) + self.get_N_A_2ac(
-            rnd_In_node) + self.get_N_A_2cc(rnd_In_node)
-        NumberOfInAtoms_Ga_site = 1 + self.get_N_A_1ac(rnd_Ga_Node) + self.get_N_A_1aa(rnd_Ga_Node
-                                                                                       ) + self.get_N_A_2ac(
-            rnd_Ga_Node) + self.get_N_A_2cc(rnd_Ga_Node)
+        no_In_neighbours_of_In_site = (1
+                                       + self.get_no_atms_in_1ac(rnd_In_atm)
+                                       + self.get_no_atms_in_1aa(rnd_In_atm)
+                                       + self.get_no_atms_in_2ac(rnd_In_atm)
+                                       + self.get_no_atms_in_2cc(rnd_In_atm))
 
-        nconfig_InIn1ac_In = NumberOfInAtoms_In_site * 3
-        nconfig_InIn2cc_In = NumberOfInAtoms_In_site
-        nconfig_InIn1ac_Ga = NumberOfInAtoms_Ga_site * 3
-        nconfig_InIn2cc_Ga = NumberOfInAtoms_Ga_site
+        # Must +1 for Ga as well because there should be an In atom in the position of the Ga post swap
+        no_In_neighbours_of_Ga_site = (1
+                                       + self.get_no_atms_in_1ac(rnd_Ga_atm)
+                                       + self.get_no_atms_in_1aa(rnd_Ga_atm)
+                                       + self.get_no_atms_in_2ac(rnd_Ga_atm)
+                                       + self.get_no_atms_in_2cc(rnd_Ga_atm))
+
+        # multiplying by 3 to satisfy the symmetry of the wurtzite structure
+        nconfig_InIn1ac_In = no_In_neighbours_of_In_site * 3
+        nconfig_InIn2cc_In = no_In_neighbours_of_In_site
+        nconfig_InIn1ac_Ga = no_In_neighbours_of_Ga_site * 3
+        nconfig_InIn2cc_Ga = no_In_neighbours_of_Ga_site
 
         Eb_1ac_comp = self.Eb_1ac()
         Eb_1aa_comp = self.Eb_1aa()
         Eb_2ac_comp = self.Eb_2ac()
         Eb_2cc_comp = self.Eb_2cc()
-        Ein = nconfig_InIn1ac_In * Eb_1ac_comp + nconfig_InIn1ac_In * Eb_1aa_comp + nconfig_InIn1ac_In * Eb_2ac_comp + nconfig_InIn2cc_In * Eb_2cc_comp
-        Efi = nconfig_InIn1ac_Ga * Eb_1ac_comp + nconfig_InIn1ac_Ga * Eb_1aa_comp + nconfig_InIn1ac_Ga * Eb_2ac_comp + nconfig_InIn2cc_Ga * Eb_2cc_comp
+
+        Ein = (nconfig_InIn1ac_In * Eb_1ac_comp
+               + nconfig_InIn1ac_In * Eb_1aa_comp
+               + nconfig_InIn1ac_In * Eb_2ac_comp
+               + nconfig_InIn2cc_In * Eb_2cc_comp)
+
+        Efi = (nconfig_InIn1ac_Ga * Eb_1ac_comp
+               + nconfig_InIn1ac_Ga * Eb_1aa_comp
+               + nconfig_InIn1ac_Ga * Eb_2ac_comp
+               + nconfig_InIn2cc_Ga * Eb_2cc_comp)
+
         probabilityOfAcceptance = math.exp((Ein - Efi) / self.kT)
         acceptSwap = False
         if Ein > Efi or random.random() < probabilityOfAcceptance:
             acceptSwap = True
-            self.G.nodes[rnd_In_node]['species'], self.G.nodes[rnd_Ga_Node]['species'] = 'Ga', 'In'
+            self.G.nodes[rnd_In_atm]['species'], self.G.nodes[rnd_Ga_atm]['species'] = 'Ga', 'In'
 
         return acceptSwap
 
@@ -209,7 +224,7 @@ class SimulateAnnealing:
     def Eb_2ac(self):
         if self.In_composition == 0.1:
             E3 = 0.007
-        if self.In_composition == 0.25:
+        elif self.In_composition == 0.25:
             E3 = 0.008
         else:
             E3 = 0.0133 * self.In_composition + 0.0052
@@ -219,9 +234,9 @@ class SimulateAnnealing:
         E4 = 0.1238 * (self.In_composition ** 2) - 0.1122 * self.In_composition + 0.04
         return E4
 
-    def get_N_A_1ac(self, node):
+    def get_num_atms_in_1ac(self, node):
         """
-        input a node, return the number of In atoms of the 1ac neighbours(k=1)
+        input a node, return the number of In atoms of the 1ac neighbours(weight=1)
         """
         neighboursOfRandomNode = self.getNeighbours(node, 1)
         numberOfIndiumNeighbours = 0
@@ -230,9 +245,9 @@ class SimulateAnnealing:
                 numberOfIndiumNeighbours += 1
         return numberOfIndiumNeighbours
 
-    def get_N_A_1aa(self, node):
+    def get_num_atms_in_1aa(self, node):
         """
-        input a node, return the number of In atoms of the 1aa neighbours(k=2)
+        input a node, return the number of In atoms of the 1aa neighbours(weight=2)
         """
         neighboursOfRandomNode = self.getNeighbours(node, 2)
         numberOfIndiumNeighbours = 0
@@ -241,9 +256,9 @@ class SimulateAnnealing:
                 numberOfIndiumNeighbours += 1
         return numberOfIndiumNeighbours
 
-    def get_N_A_2ac(self, node):
+    def get_num_atms_in_2ac(self, node):
         """
-        input a node, return the number of In atoms of the 2ac neighbours(k=3)
+        input a node, return the number of In atoms of the 2ac neighbours(weight=3)
         """
         neighboursOfRandomNode = self.getNeighbours(node, 3)
         numberOfIndiumNeighbours = 0
@@ -252,9 +267,9 @@ class SimulateAnnealing:
                 numberOfIndiumNeighbours += 1
         return numberOfIndiumNeighbours
 
-    def get_N_A_2cc(self, node):
+    def get_num_atms_in_2cc(self, node):
         """
-        input a node, return the number of In atoms of the 2cc neighbours(k=4)
+        input a node, return the number of In atoms of the 2cc neighbours(weight=4)
         """
         neighboursOfRandomNode = self.getNeighbours(node, 4)
         numberOfIndiumNeighbours = 0
@@ -277,7 +292,7 @@ class SimulateAnnealing:
             SwapsSoFar += 1
             if self.attempt_atom_swap():
                 successfulSwaps += 1
-            if (i % self.statsFrequency == 0) or i ==0 or i == 10 or i == 100 or i == 500:
+            if (i % self.statsFrequency == 0) or i == 0 or i == 10 or i == 100 or i == 500:
                 print(round(float(i), 3) / ns * 100, '% Done')
                 self.SROx.append(i)
                 self.SROy1.append(self.getSRO_X(1))
@@ -297,30 +312,22 @@ class SimulateAnnealing:
         information. DOI: 10.1103/PhysRevB.82.045112
         """
 
-        # get the number of In neighbours for each Ga atom in H.
-
-
-        #swap this out for a dict search for a specific weight in edgesDict?
-        # --
-        # add a 2nd dict to save the number of indium neighbours of each Ga atom
-        # ORRR ammend edgesDict to incorporate the species info, so we can search for Ga atoms only
-        fail_counter = 0
         indiumCount = []  # - O(n*len(neighbours)) - n is proportional to the volume of q_well but the latter is <6
-        neighbours_count = []
+        fail_counter = 0
         for node in self.H:  # creating a Ga-only subgraph will reduce this to O(n)--> O(n*(1-Indium_composition))
             if self.H.nodes[node]['species'] == 'Ga':
                 neighbours = self.getNeighbours(node, weight)
+                print("SRO_" + str(weight), neighbours, len(neighbours), fail_counter)
                 numberOfIndiumNeighbours = 0
                 for neighbour in neighbours:
                     if self.H.nodes[neighbour]['species'] == 'In':
                         numberOfIndiumNeighbours += 1
-# e.g. for indiumComposition=0.5, numberofIndiumNeighbours would be 3 on average for a random composition
-# but might fluctuate from site to site, and therefore indiumCount would be appended by 0.5 on average
+                # e.g. for indiumComposition=0.5, numberofIndiumNeighbours would be 3 on average for a random composition
+                # but might fluctuate from site to site, and therefore indiumCount would be appended by 0.5 on average
                 indiumCount.append(numberOfIndiumNeighbours / 6.0)
             else:
-                fail_counter +=1
+                fail_counter += 1
         indiumProbability = sum(indiumCount) / len(indiumCount)  # this calculates that average!
-
 
         print('This is fail counter:', fail_counter)
         return 1 - (indiumProbability / self.In_composition)
@@ -365,6 +372,7 @@ class SimulateAnnealing:
         nx.write_gpickle(self.G, self.size + '-xIn=' + str(self.In_composition) + '_T=' + str(self.T) + 'K_SRO_X=' +
                          str(self.SROy1[-1]) + '.gpickle')
 
+
 ########################################################################################################################
 # Driver Code
 if __name__ == "__main__":
@@ -399,9 +407,3 @@ if __name__ == "__main__":
     # hence the counter below will show 54 - 18 = 36 atoms. The number of keys in edgesDict
 
     # THIS MEANS THAT edgesDict contains ALL the atoms and weights that we need for getNeighbours()
-
-
-
-
-
-
