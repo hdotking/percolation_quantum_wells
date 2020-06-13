@@ -5,16 +5,17 @@ import os
 import numpy as np
 import sys
 
-import time
+"""
+Structure of the program:
 
-# Current structure of program
-# 1. Loads graph made from makeCrystalGraph.py & Randomises initial structure
-# 3. Runs IsingModel()
-# 4. User can then choose to run additional functions, e.g.
-#    graphSRO()
-#    isingModel()
+1. Loads graph made from makeCrystalGraph.py & Randomises initial structure
+2. Runs the augmented Ising Model
+3. Outputs: 
+    - .xyz file for visualisation
+    - .csv for viewing SRO params 
+    - gpickle for storage
 
-start = time.time()
+"""
 
 
 class SimulateAnnealing:
@@ -34,20 +35,20 @@ class SimulateAnnealing:
         # Simulation parameters
         self.T = 773  # K
         self.kT = kB * self.T
-        # self.steps = 5000000
-        self.steps = 200000
+        self.steps = 5000000
+        # self.steps = 200000
         self.In_composition = 0.5
-        self.edgesDict = {}  # hasmhmap to reduce timecomplexity
+        self.edgesDict = {}  # store in dict to reduce time complexity of finding neighbours
         self.statsFrequency = 10000  # generate statistics every statsFrequency steps
         self.saveFrequency = int(self.steps) / 1000
 
-        # define binding energies for this specific composition: since it only needs to be determined once.
+        # Define binding energies for this specific composition
         self.Eb_1ac = self.get_Eb_1ac()
         self.Eb_1aa = self.get_Eb_1aa()
         self.Eb_2ac = self.get_Eb_2ac()
         self.Eb_2cc = self.get_Eb_2cc()
 
-        # handles linux vs. windows issues with feeding input through command line
+        # Handles linux vs. windows issues with feeding input through command line
         if '/' in filename:
             print('input with forward slash')
             size = filename.split("/")[-1]
@@ -59,7 +60,7 @@ class SimulateAnnealing:
         else:
             size = filename.split("-")[0]
 
-        # define variables for naming and graphing
+        # Define variables for naming and graphing
         self.size = size
         self.J = []  # J will be our list that holds our nodes where surface == False
         self.H = None  # H will be the subgraph holding the nodes defined in J
@@ -74,6 +75,11 @@ class SimulateAnnealing:
 
     def initialise_microstructure(self):
 
+        """
+        Randomise the initial microstructure s.t. it's ready for the Metropolis Monte Carlo Algo
+        """
+
+        # Using ONLY non-surface nodes speeds up the code as we are NOT attempting to swap the fixed surface atoms
         print('size is', self.size.split('x')[-1])
         if self.size.split('x')[-1] == '1':  # if we are simulating a nxnx1 quantum well
             for node in self.G:
@@ -86,13 +92,13 @@ class SimulateAnnealing:
                     self.J.append(node)
             self.H = self.G.subgraph(self.J)  # H is the subgraph which contains only BULK atoms.
 
-        # This speeds up the code as we are NOT attempting to swap the fixed surface atoms
         print("Randomising initial configuration to match an overall composition of InₓGa₁₋ₓN "
               f"(x={self.In_composition})")
         tot_no_Ga_atms = 0
         curr_no_In_atms = 0
 
-        for node in self.H:  # count up number of Ga sites in our non-surface subgraph
+        # make sure the initial microstructure has on Indium already
+        for node in self.H:
             if self.H.nodes[node]['species'] == 'Ga':
                 tot_no_Ga_atms += 1
             if self.H.nodes[node]['species'] == 'In':
@@ -115,7 +121,7 @@ class SimulateAnnealing:
 
     def attempt_atom_swap(self):
         """
-        See thesis for definitions:
+        See thesis for definitions.
 
         What I do here is:
 
@@ -253,7 +259,7 @@ class SimulateAnnealing:
         input a node, return the number of neighbouring In atoms in the 1ac configuration (weight=1)
         """
 
-        neighboursOfRandomNode = self.getNeighbours(node, 1)
+        neighboursOfRandomNode = self.get_neighbours(node, 1)
         numberOfIndiumNeighbours = 0
         for neighbour in neighboursOfRandomNode:
             if self.G.nodes[neighbour]['species'] == 'In':
@@ -265,7 +271,7 @@ class SimulateAnnealing:
         input a node, return the number of neighbouring In atoms in the 1aa configuration (weight=2)
         """
 
-        neighboursOfRandomNode = self.getNeighbours(node, 2)
+        neighboursOfRandomNode = self.get_neighbours(node, 2)
         numberOfIndiumNeighbours = 0
         for neighbour in neighboursOfRandomNode:
             if self.G.nodes[neighbour]['species'] == 'In':
@@ -277,7 +283,7 @@ class SimulateAnnealing:
         input a node, return the number of neighbouring In atoms in the 2ac configuration (weight=3)
         """
 
-        neighboursOfRandomNode = self.getNeighbours(node, 3)
+        neighboursOfRandomNode = self.get_neighbours(node, 3)
         numberOfIndiumNeighbours = 0
         for neighbour in neighboursOfRandomNode:
             if self.G.nodes[neighbour]['species'] == 'In':
@@ -288,7 +294,7 @@ class SimulateAnnealing:
         """
         input a node, return the number of neighbouring In atoms in the 2ccc configuration (weight=4)
         """
-        neighboursOfRandomNode = self.getNeighbours(node, 4)
+        neighboursOfRandomNode = self.get_neighbours(node, 4)
         numberOfIndiumNeighbours = 0
         for neighbour in neighboursOfRandomNode:
             if self.G.nodes[neighbour]['species'] == 'In':
@@ -332,16 +338,14 @@ class SimulateAnnealing:
         information. DOI: 10.1103/PhysRevB.82.045112
         """
 
-        indiumCount = []  # - O(n*len(neighbours)) - n is proportional to the volume of q_well but the latter is small
+        indiumCount = []  # - O(n*len(neighbours)) - n is proportional to the volume of q_well but the latter is <=6
         for node in self.H:  # creating a Ga-only subgraph will reduce this to O(n)--> O(n*(1-Indium_composition))
             if self.H.nodes[node]['species'] == 'Ga':
-                neighbours = self.getNeighbours(node, weight)
+                neighbours = self.get_neighbours(node, weight)
                 numberOfIndiumNeighbours = 0
                 for neighbour in neighbours:
                     if self.H.nodes[neighbour]['species'] == 'In':
                         numberOfIndiumNeighbours += 1
-                # e.g. for indiumComposition=0.5, numberofIndiumNeighbours would be 3 on average for random compositions
-                # but might fluctuate from site to site, and therefore indiumCount would be appended by 0.5 on average
                 if weight != 4:
                     indiumCount.append(numberOfIndiumNeighbours / 6.0)
                 else:
@@ -351,7 +355,7 @@ class SimulateAnnealing:
 
         return 1 - (indiumProbability / self.In_composition)
 
-    def getNeighbours(self, node, weight):
+    def get_neighbours(self, node, weight):
         """
         input your node and the weight of the neighbours you wanna find
         Retrieve a list of the nodes of the kth neigbour.
@@ -362,12 +366,8 @@ class SimulateAnnealing:
         if key in self.edgesDict:
             return self.edgesDict[key]
         else:  # O(n) time complexity
-            neighbours_with_wt = []
             all_neighbours = list(self.H[node].keys())
-            for a_nbr in all_neighbours:
-                if self.H[node][a_nbr]['weight'] == weight:
-                    neighbours_with_wt.append(a_nbr)
-
+            neighbours_with_wt = [a_nbr for a_nbr in all_neighbours if self.H[node][a_nbr]['weight'] == weight]
             self.edgesDict[key] = neighbours_with_wt
             return neighbours_with_wt
 
@@ -393,6 +393,7 @@ class SimulateAnnealing:
 
 ########################################################################################################################
 # Driver Code
+
 if __name__ == "__main__":
 
     try:
@@ -408,6 +409,3 @@ if __name__ == "__main__":
     sa.initialise_microstructure()
     sa.run_metropolis_monte_carlo(sa.steps)
     sa.save_output()
-
-    end = time.time()
-    print(end - start)
