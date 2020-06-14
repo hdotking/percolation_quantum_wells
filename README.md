@@ -1,4 +1,4 @@
-# Simulating thermodynamic oddities in non-random alloys and determining the percolation threshold within quantum wells.
+# Simulating thermodynamic oddities in non-random alloys and determining the percolation threshold within quantum wells
 <p align="center">
   <img width="460" height="300" src="working_dir/visualisation/gif/16x16x5.gif">
 </p>
